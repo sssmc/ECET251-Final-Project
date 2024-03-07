@@ -2,6 +2,16 @@
 
 #include "Manchester.h"
 
+/*Packet Structure
+
+00000000      00000000    00000000      00000000     00000000     00000000
+|Address| |Packet Count| |Red Value| |Green Value| |Blue Value|  |Checksum|
+    0            1             2             3           4            5
+*/
+
+//Packet Address
+#define ADDRESS 0xA4
+
 //Serial Baudrate
 #define BAUDRATE 9600
 
@@ -27,13 +37,16 @@
 #define RGB_LED_GREEN  10
 #define RGB_LED_BLUE  9
 
+//Packet
+uint8_t TXPacket[6] = {0, 0, 0, 0, 0, 0};
+
 //Delays
 
 uint64_t currentMillis = 0;
 uint64_t lastPrint = 0;
 uint64_t lastMeasure = 0;
 
-uint8_t LEDColors[3] = {0, 0, 0};
+uint16_t LEDColors[3] = {0, 0, 0};
 
 void setup()
 {
@@ -60,6 +73,9 @@ void setup()
   digitalWrite(RED_LED, LOW);
   digitalWrite(GREEN_LED, LOW);
 
+  //Set the packet address
+  TXPacket[0] = ADDRESS;
+
 }
 
 
@@ -68,21 +84,28 @@ void loop()
 {
   currentMillis = millis();
 
-  if (currentMillis + MEASURE_DELAY > lastMeasure)
+  if (lastMeasure + MEASURE_DELAY < currentMillis)
   {
     lastMeasure = currentMillis;
     LEDColors[0] = analogRead(RED_POT);
     LEDColors[1] = analogRead(GREEN_POT);
     LEDColors[2] = analogRead(BLUE_POT);
+
+    //Output the LED Colors to the RGB LED
+    analogWrite(RGB_LED_RED, LEDColors[0] / 4);
+    analogWrite(RGB_LED_GREEN, LEDColors[1] / 4);
+    analogWrite(RGB_LED_BLUE, LEDColors[2] / 4);
+
+    //Set the LED Colors in the TXPacket
+    TXPacket[2] = LEDColors[0];
+    TXPacket[3] = LEDColors[1];
+    TXPacket[4] = LEDColors[2];
+
+    lastMeasure = currentMillis;
   }
   
-  if(currentMillis + PRINT_DELAY > lastPrint)
+  if(lastPrint + PRINT_DELAY < currentMillis)
   {
-    //Output the LED Colors to the RGB LED
-    analogWrite(RGB_LED_RED, LEDColors[0]);
-    analogWrite(RGB_LED_GREEN, LEDColors[1]);
-    analogWrite(RGB_LED_BLUE, LEDColors[2]);
-
     //Print the LED Colors to the Serial Monitor
     lastPrint = currentMillis;
     Serial.print("Red: ");
@@ -91,6 +114,17 @@ void loop()
     Serial.print(LEDColors[1]);
     Serial.print(" Blue: ");
     Serial.println(LEDColors[2]);
+
+    lastPrint = currentMillis;
+  }
+
+  if(digitalRead(USER_BUTTON) == LOW)
+  {
+    Serial.println("Button Pressed");
+    digitalWrite(RED_LED, HIGH);
+    delay(1000);
+    digitalWrite(RED_LED, LOW);
   }
   
 }
+

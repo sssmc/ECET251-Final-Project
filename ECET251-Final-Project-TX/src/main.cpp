@@ -2,54 +2,63 @@
 
 #include "Manchester.h"
 
+//Serial Baudrate
+#define BAUDRATE 9600
 
-/*
-  Manchester Transmitter example
+//Serial Print Delay
+#define PRINT_DELAY 1000
 
-  In this example transmitter will send 10 bytes array  per transmittion
-  try different speeds using this constants, your maximum possible speed will
-  depend on various factors like transmitter type, distance, microcontroller speed, ...
-  MAN_300 0
-  MAN_600 1
-  MAN_1200 2
-  MAN_2400 3
-  MAN_4800 4
-  MAN_9600 5
-  MAN_19200 6
-  MAN_38400 7
-*/
+//Measurement Delay
+#define MEASURE_DELAY 100
 
-#define TX_PIN  11          //pin where your transmitter is connected
-#define GRN_LED  4          //pin for Green LED
-#define YLO_LED  5          //pin for Yellow LED
-#define datalength   7      //this is size of array
-#define button  10          //pin where your active-low button is connected
+//Pin Definitions
+#define TX_PIN  3
 
+#define GREEN_LED  13         
+#define RED_LED    12        
 
-uint8_t data[7] = {7, 'K', 'A', 'L', 'E', 'B', 'S'};  // array of data to transmit
+#define USER_BUTTON  8          
+
+#define RED_POT A0
+#define GREEN_POT A1
+#define BLUE_POT A2
+
+#define RGB_LED_RED  11
+#define RGB_LED_GREEN  10
+#define RGB_LED_BLUE  9
+
+//Delays
+
+uint64_t currentMillis = 0;
+uint64_t lastPrint = 0;
+uint64_t lastMeasure = 0;
+
+uint8_t LEDColors[3] = {0, 0, 0};
 
 void setup()
 {
-  pinMode(GRN_LED , OUTPUT);
-  digitalWrite(GRN_LED, LOW);
-  pinMode(YLO_LED , OUTPUT);
-  digitalWrite(YLO_LED, LOW);
 
+  Serial.begin(BAUDRATE);
 
-  for (byte i = 0; i < 5; i++)
-  {
-    digitalWrite(5, HIGH);
-    digitalWrite(4, HIGH);
-    delay(25);
-    digitalWrite(5, LOW);
-    digitalWrite(4, LOW);
+  //Print the project information
+  Serial.println("ECET 251 - Final Project");
+  Serial.println("RGB LED Controller");
+  Serial.println("Sebastien Robitaille - Kayleb Stetsko");
+  Serial.println("Spring 2024");
+  Serial.println("-----------------------------");
 
-  }
+  pinMode(TX_PIN, OUTPUT);
 
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(RED_LED, OUTPUT);
+  pinMode(USER_BUTTON, INPUT_PULLUP);
 
-  //man.workAround1MhzTinyCore(); //add this in order for transmitter to work with 1Mhz Attiny85/84
-  man.setupTransmit(TX_PIN, MAN_300);
+  pinMode(RED_POT, INPUT);
+  pinMode(GREEN_POT, INPUT);
+  pinMode(BLUE_POT, INPUT);
 
+  digitalWrite(RED_LED, LOW);
+  digitalWrite(GREEN_LED, LOW);
 
 }
 
@@ -57,20 +66,31 @@ void setup()
 
 void loop()
 {
-  delay(800);
-  while (digitalRead(10) == 1)		// do nothing while no button pressed
+  currentMillis = millis();
+
+  if (currentMillis + MEASURE_DELAY > lastMeasure)
   {
-
-    digitalWrite(GRN_LED, 0);      // GREEN LED on = system is ready to transmit
+    lastMeasure = currentMillis;
+    LEDColors[0] = analogRead(RED_POT);
+    LEDColors[1] = analogRead(GREEN_POT);
+    LEDColors[2] = analogRead(BLUE_POT);
   }
+  
+  if(currentMillis + PRINT_DELAY > lastPrint)
+  {
+    //Output the LED Colors to the RGB LED
+    analogWrite(RGB_LED_RED, LEDColors[0]);
+    analogWrite(RGB_LED_GREEN, LEDColors[1]);
+    analogWrite(RGB_LED_BLUE, LEDColors[2]);
 
-  digitalWrite(GRN_LED, 1);    // GREEN LED off
-
-  man.transmitArray(datalength, data);
-  for (int i = 0; i < 5; i++)
-  { digitalWrite(YLO_LED, 0);
-    delay(150);
-    digitalWrite(YLO_LED, 1);
+    //Print the LED Colors to the Serial Monitor
+    lastPrint = currentMillis;
+    Serial.print("Red: ");
+    Serial.print(LEDColors[0]);
+    Serial.print(" Green: ");
+    Serial.print(LEDColors[1]);
+    Serial.print(" Blue: ");
+    Serial.println(LEDColors[2]);
   }
-  delay(800);
+  
 }

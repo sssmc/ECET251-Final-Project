@@ -38,7 +38,9 @@
 #define RGB_LED_BLUE  9
 
 //Packet
-uint8_t TXPacket[6] = {0, 0, 0, 0, 0, 0};
+uint8_t TXData[3] = {0, 0, 0};
+
+uint8_t packetCount = 0;
 
 //Delays
 
@@ -47,6 +49,11 @@ uint64_t lastPrint = 0;
 uint64_t lastMeasure = 0;
 
 uint16_t LEDColors[3] = {0, 0, 0};
+
+//Function Prototypes
+uint8_t CalculateChecksum(uint8_t data[3]);
+
+void TransmitPacket(uint8_t data[3]);
 
 void setup()
 {
@@ -73,8 +80,7 @@ void setup()
   digitalWrite(RED_LED, LOW);
   digitalWrite(GREEN_LED, LOW);
 
-  //Set the packet address
-  TXPacket[0] = ADDRESS;
+  man.setupTransmit(TX_PIN, MAN_300);
 
 }
 
@@ -97,9 +103,9 @@ void loop()
     analogWrite(RGB_LED_BLUE, LEDColors[2] / 4);
 
     //Set the LED Colors in the TXPacket
-    TXPacket[2] = LEDColors[0];
-    TXPacket[3] = LEDColors[1];
-    TXPacket[4] = LEDColors[2];
+    TXData[0] = LEDColors[0];
+    TXData[1] = LEDColors[1];
+    TXData[2] = LEDColors[2];
 
     lastMeasure = currentMillis;
   }
@@ -121,10 +127,68 @@ void loop()
   if(digitalRead(USER_BUTTON) == LOW)
   {
     Serial.println("Button Pressed");
+
     digitalWrite(RED_LED, HIGH);
+
+    //Trasmit the packet
+    TransmitPacket(TXData);
     delay(1000);
+
     digitalWrite(RED_LED, LOW);
   }
   
+}
+
+void TransmitPacket(uint8_t data[3])
+{
+
+  uint8_t TXPacket[6] = {0, 0, 0, 0, 0, 0};
+
+  //Set the packet address
+  TXPacket[0] = ADDRESS;
+
+  //Set the packet count
+  TXPacket[1] = packetCount;
+
+  //Set the data
+  for (int i = 0; i < 3; i++)
+  {
+    TXPacket[i + 2] = data[i];
+  }
+
+  //Calculate and set the checksum
+  TXPacket[5] = CalculateChecksum(data);
+
+  Serial.print("Packet Data: ");
+  for(int i = 0; i < 3; i++)
+  {
+    Serial.print(data[i]);
+  }
+  Serial.println("");
+
+  Serial.println("Transmitting Packet: ");
+  for(int i = 0; i < 6; i++)
+  {
+    Serial.print(TXPacket[i]);
+  }
+  Serial.println("");
+
+  //Transmit
+  man.transmitArray(6, data);
+
+  //Increment the packet count
+  packetCount += 1;
+  packetCount = packetCount % 256;
+
+}
+
+uint8_t CalculateChecksum(uint8_t data[3])
+{
+  uint8_t checksum = 0;
+  for (int i = 0; i < 3; i++)
+  {
+    checksum += data[i];
+  }
+  return checksum;
 }
 

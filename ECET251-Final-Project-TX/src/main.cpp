@@ -142,34 +142,44 @@ void loop()
 void TransmitPacket(uint8_t data[3])
 {
 
+  uint8_t ChecksumData[5] = {0, 0, 0, 0, 0};
   uint8_t TXPacket[6] = {0, 0, 0, 0, 0, 0};
 
+
   //Set the packet address
-  TXPacket[0] = ADDRESS;
+  ChecksumData[0] = ADDRESS;
 
   //Set the packet count
-  TXPacket[1] = packetCount;
+  ChecksumData[1] = packetCount;
 
   //Set the data
   for (int i = 0; i < 3; i++)
   {
-    TXPacket[i + 2] = data[i];
+     ChecksumData[i + 2] = data[i];
   }
 
-  //Calculate and set the checksum
-  TXPacket[5] = CalculateChecksum(data);
+  //Set the checksum data to the final packet
+  for(int i=0; i<5; i++)
+  {
+    TXPacket[i] = ChecksumData[i];
+  }
+
+  //Calculate and set the checksum in the final packet
+  TXPacket[5] = CalculateChecksum(ChecksumData);
 
   Serial.print("Packet Data: ");
   for(int i = 0; i < 3; i++)
   {
-    Serial.print(data[i]);
+    Serial.print(" - ");
+    Serial.print(data[i], BIN);
   }
   Serial.println("");
 
   Serial.println("Transmitting Packet: ");
   for(int i = 0; i < 6; i++)
   {
-    Serial.print(TXPacket[i]);
+    if(i != 0){Serial.print(" - ");}
+    Serial.print(TXPacket[i], BIN);
   }
   Serial.println("");
 
@@ -182,10 +192,10 @@ void TransmitPacket(uint8_t data[3])
 
 }
 
-uint8_t CalculateChecksum(uint8_t data[3])
+uint8_t CalculateChecksum(uint8_t data[5])
 {
   uint8_t checksum = 0;
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < 5; i++)
   {
     checksum += data[i];
   }

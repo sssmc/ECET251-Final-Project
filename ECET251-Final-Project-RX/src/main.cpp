@@ -68,19 +68,19 @@ void loop() {
 	  Serial.print("Received... message # ");
 	  Serial.println(receivedPacketCount);
 	  digitalWrite(RED_LED, 1);
-    
+    //Print the received data
     man.beginReceiveArray(BUFFER_SIZE, RXBuffer);
     for(int i=0; i<BUFFER_SIZE; i++){
         Serial.print(RXBuffer[i], BIN);
     }
     Serial.println();
-
+  //Make an array to store the Checksum data
   uint8_t checksumData[5];
-
+  //Copy the data from the RXBuffer to the checksumData
   for(int i=0; i<5; i++){
     checksumData[i] = RXBuffer[i];
   }
-
+  //Check the checksum
   if (RXBuffer[5] == CalculateChecksum(checksumData)){
     Serial.println("Checksum OK, Received: " + String(RXBuffer[5]) + " Calculated: " + String(CalculateChecksum(checksumData)));
     if(RXBuffer[0] == ADDRESS){
@@ -96,7 +96,7 @@ void loop() {
     Serial.println("Checksum Not OK, Received: " + String(RXBuffer[5]) + " Calculated: " + String(CalculateChecksum(checksumData)));
 
   }
-
+  
   uint8_t calculatedChecksum = CalculateChecksum(RXBuffer);
 
   }

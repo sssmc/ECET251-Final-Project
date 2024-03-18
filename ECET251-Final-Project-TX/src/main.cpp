@@ -184,7 +184,7 @@ void TransmitPacket(uint8_t data[3])
   Serial.println("");
 
   //Transmit
-  man.transmitArray(6, data);
+  man.transmitArray(6, TXPacket);
 
   //Increment the packet count
   packetCount += 1;

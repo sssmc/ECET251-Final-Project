@@ -1,5 +1,5 @@
 #include <Arduino.h>
-
+#include <Manchester.h>
 
 //Address to receive data on
 #define ADDRESS 0xA4
@@ -67,7 +67,7 @@ void loop() {
     //Print the received packet count
 	  Serial.print("Received... message # ");
 	  Serial.println(receivedPacketCount);
-	  digitalWrite(RED_LED, 1);
+	  digitalWrite(GREEN_LED, 1);
     //Print the received data
     man.beginReceiveArray(BUFFER_SIZE, RXBuffer);
     for(int i=0; i<BUFFER_SIZE; i++){
@@ -84,6 +84,7 @@ void loop() {
   if (RXBuffer[5] == CalculateChecksum(checksumData)){
     Serial.println("Checksum OK, Received: " + String(RXBuffer[5]) + " Calculated: " + String(CalculateChecksum(checksumData)));
     if(RXBuffer[0] == ADDRESS){
+      digitalWrite(RED_LED, 0);
       Serial.println("Address OK, Received: " + String(RXBuffer[0]) + " Expected: " + String(ADDRESS));
         analogWrite(RGB_LED_RED, RXBuffer[2]);
         analogWrite(RGB_LED_GREEN, RXBuffer[3]);
@@ -91,17 +92,21 @@ void loop() {
         
       } else{
       Serial.println("Address Not OK, Received: " + String(RXBuffer[0]) + " Expected: " + String(ADDRESS));
-    }
-  } else {
-    Serial.println("Checksum Not OK, Received: " + String(RXBuffer[5]) + " Calculated: " + String(CalculateChecksum(checksumData)));
+      digitalWrite(RED_LED, 1);
 
+  } 
+  }
+  else 
+  {
+    Serial.println("Checksum Not OK, Received: " + String(RXBuffer[5]) + " Calculated: " + String(CalculateChecksum(checksumData)));
+    digitalWrite(RED_LED, 1);
   }
   
   uint8_t calculatedChecksum = CalculateChecksum(RXBuffer);
 
   }
   delay(500);
-  digitalWrite(RED_LED, 0);
+  digitalWrite(GREEN_LED, 0);
   Serial.println("end");
 }
 

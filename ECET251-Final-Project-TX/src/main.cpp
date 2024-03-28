@@ -143,7 +143,11 @@ void TransmitPacket(uint8_t data[3])
 {
 
   uint8_t ChecksumData[5] = {0, 0, 0, 0, 0};
-  uint8_t TXPacket[6] = {0, 0, 0, 0, 0, 0};
+  uint8_t TXPacket[6];
+  for(int i = 0; i < 6; i++)
+  {
+    TXPacket[i] = 0;
+  }
 
 
   //Set the packet address

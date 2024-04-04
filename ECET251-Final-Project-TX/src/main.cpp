@@ -58,6 +58,7 @@ void TransmitPacket(uint8_t data[3]);
 void setup()
 {
 
+  //Initialize the Serial Connection
   Serial.begin(BAUDRATE);
 
   //Print the project information
@@ -67,6 +68,7 @@ void setup()
   Serial.println("Spring 2024");
   Serial.println("-----------------------------");
 
+  //Pin Setup
   pinMode(TX_PIN, OUTPUT);
 
   pinMode(GREEN_LED, OUTPUT);
@@ -77,9 +79,11 @@ void setup()
   pinMode(GREEN_POT, INPUT);
   pinMode(BLUE_POT, INPUT);
 
+  //Turn off the LEDs to start
   digitalWrite(RED_LED, LOW);
   digitalWrite(GREEN_LED, LOW);
 
+  //Initialize the Manchester Library
   man.setupTransmit(TX_PIN, MAN_300);
 
 }
@@ -88,11 +92,16 @@ void setup()
 
 void loop()
 {
+  //Get the current time
   currentMillis = millis();
 
+  //If the measurement delay has passed
   if (lastMeasure + MEASURE_DELAY < currentMillis)
   {
+    //Reset the measurement delay
     lastMeasure = currentMillis;
+
+    //Read the potentiometers
     LEDColors[0] = analogRead(RED_POT);
     LEDColors[1] = analogRead(GREEN_POT);
     LEDColors[2] = analogRead(BLUE_POT);
@@ -107,11 +116,14 @@ void loop()
     TXData[1] = LEDColors[1];
     TXData[2] = LEDColors[2];
 
-    lastMeasure = currentMillis;
   }
   
+  //If the print delay has passed
   if(lastPrint + PRINT_DELAY < currentMillis)
   {
+    //Reset the print delay
+    lastPrint = currentMillis;
+
     //Print the LED Colors to the Serial Monitor
     lastPrint = currentMillis;
     Serial.print("Red: ");
@@ -120,20 +132,20 @@ void loop()
     Serial.print(LEDColors[1]);
     Serial.print(" Blue: ");
     Serial.println(LEDColors[2]);
-
-    lastPrint = currentMillis;
   }
 
+  //If the button is pressed
   if(digitalRead(USER_BUTTON) == LOW)
   {
     Serial.println("Button Pressed");
 
+    //Turn on the Red LED
     digitalWrite(RED_LED, HIGH);
-
     //Trasmit the packet
     TransmitPacket(TXData);
+    //Delay to prevent multiple transmissions
     delay(1000);
-
+    //Turn off the Red LED
     digitalWrite(RED_LED, LOW);
   }
   
@@ -142,13 +154,18 @@ void loop()
 void TransmitPacket(uint8_t data[3])
 {
 
+  //Array to hold the data checked by the checksum
   uint8_t ChecksumData[5] = {0, 0, 0, 0, 0};
+<<<<<<< HEAD
   uint8_t TXPacket[6];
   for(int i = 0; i < 6; i++)
   {
     TXPacket[i] = 0;
   }
-
+=======
+  //Array to hold the full packet
+  uint8_t TXPacket[6] = {0, 0, 0, 0, 0, 0};
+>>>>>>> fd7faff (Added hamming encode function)
 
   //Set the packet address
   ChecksumData[0] = ADDRESS;
@@ -156,13 +173,13 @@ void TransmitPacket(uint8_t data[3])
   //Set the packet count
   ChecksumData[1] = packetCount;
 
-  //Set the data
+  //Set the data from the potentiometers
   for (int i = 0; i < 3; i++)
   {
      ChecksumData[i + 2] = data[i];
   }
 
-  //Set the checksum data to the final packet
+  //Put the checksum checked data into the final packet
   for(int i=0; i<5; i++)
   {
     TXPacket[i] = ChecksumData[i];
@@ -171,6 +188,7 @@ void TransmitPacket(uint8_t data[3])
   //Calculate and set the checksum in the final packet
   TXPacket[5] = CalculateChecksum(ChecksumData);
 
+  //Print the data from the potentiometers
   Serial.print("Packet Data: ");
   for(int i = 0; i < 3; i++)
   {
@@ -179,6 +197,7 @@ void TransmitPacket(uint8_t data[3])
   }
   Serial.println("");
 
+  //Print the final packet
   Serial.println("Transmitting Packet: ");
   for(int i = 0; i < 6; i++)
   {
@@ -187,10 +206,10 @@ void TransmitPacket(uint8_t data[3])
   }
   Serial.println("");
 
-  //Transmit
+  //Transmit the packet
   man.transmitArray(6, TXPacket);
 
-  //Increment the packet count
+  //Increment the packet count and round it to 8 bits
   packetCount += 1;
   packetCount = packetCount % 256;
 
@@ -199,10 +218,50 @@ void TransmitPacket(uint8_t data[3])
 uint8_t CalculateChecksum(uint8_t data[5])
 {
   uint8_t checksum = 0;
+
+  //Sum the data bytes
   for (int i = 0; i < 5; i++)
   {
     checksum += data[i];
   }
   return checksum;
+}
+
+void encodeHamming(uint8_t data[4], uint8_t hammingData[8]){
+  
+  //Reset hammingData to zeros
+  for(int i = 0; i < 8; i++){
+    hammingData[i] = 0;
+  }
+
+  //For each of the 4 data bytes
+  for (int i = 0; i < 4; i++)
+  { 
+    //Split the data byte into two nibbles
+    uint8_t nibbles[2]  = {0, 0};
+    //High nibble
+    nibbles[0] = data[i] >> 4;
+    //Low nibble
+    nibbles[1] = data[i] & 0x0F;
+
+    //For each nibble
+    for (int j = 0; j < 2; j++)
+    {
+      //Hamming code structure
+      //0  0    0   0  0  0  0  0
+      //0  D4  D3 D2  P3  D1 P2 P1
+
+      //Calculate the three parity bits based off our data
+      uint8_t parity1 = (nibbles[j] & 0x01) ^ ((nibbles[j] & 0x02) >> 1) ^ ((nibbles[j] & 0x08) >> 3);
+      uint8_t parity2 = (nibbles[j] & 0x01) ^ ((nibbles[j] & 0x04) >> 2) ^ ((nibbles[j] & 0x08) >> 3);
+      uint8_t parity3 = ((nibbles[j] & 0x02) >> 1) ^ ((nibbles[j] & 0x04) >> 2) ^ ((nibbles[j] & 0x08) >> 3);
+
+      //Construct the hamming data byte using the three parity bits and the data nibble
+      hammingData[i*2+j] = ((nibbles[j] & 0x08) << 3) | ((nibbles[j] & 0x04) << 3) | ((nibbles[j] & 0x02) << 3) | (parity3 << 3) | ((nibbles[j] & 0x01) << 2) | (parity2 << 1) | parity1;
+
+    }
+
+  }
+  
 }
 

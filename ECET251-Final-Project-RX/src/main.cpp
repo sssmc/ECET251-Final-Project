@@ -1,3 +1,19 @@
+/*
+April 6, 2024
+ECET 251 Final Project
+RGB LED Wireless Transmitter
+Sebastien Robitaille – Kayleb Stetsko
+
+This project is a wireless RGB LED controller that uses 3 potentiometers to control 
+the each color of an RGB LED. The project uses a Hamming code to encode the data and 
+Manchester encoding to transmit the data. The project uses a 433 MHz RF transmitter
+to send the data to a receiver. The receiver decodes the data and sets the color of
+the RGB LED based on the received data. The transmitter also includes a button that 
+allows the user to manually transmit the data to the receiver, as well as a Red LED 
+to confirm message transmition. The receiver has 2 LEDs, a green to indicate the 
+receipt of a valid packet, and a Red to indicate the receipt of an invalid packet.
+*/
+
 #include <Arduino.h>
 #include <Manchester.h>
 

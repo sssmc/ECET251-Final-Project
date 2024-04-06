@@ -55,6 +55,8 @@ uint8_t CalculateChecksum(uint8_t data[3]);
 
 void TransmitPacket(uint8_t data[3]);
 
+void encodeHamming(uint8_t data[6], uint8_t hammingData[12]);
+
 void setup()
 {
 
@@ -199,7 +201,21 @@ void TransmitPacket(uint8_t data[3])
   Serial.println("");
 
   //Transmit the packet
-  man.transmitArray(6, TXPacket);
+  uint8_t hammingData[12];
+  encodeHamming(TXPacket, hammingData);
+
+  Serial.println("Transmitting Hamming Data: ");
+  for(int i = 0; i < 12; i++)
+  {
+    Serial.print(hammingData[i], BIN);
+  }
+  Serial.println("");
+
+  //Add error for testing
+  //hammingData[0] ^= 0x01;
+  //hammingData[4] ^= 0x04;
+
+  man.transmitArray(12, hammingData);
 
   //Increment the packet count and round it to 8 bits
   packetCount += 1;
@@ -219,15 +235,15 @@ uint8_t CalculateChecksum(uint8_t data[5])
   return checksum;
 }
 
-void encodeHamming(uint8_t data[4], uint8_t hammingData[8]){
+void encodeHamming(uint8_t data[6], uint8_t hammingData[12]){
   
   //Reset hammingData to zeros
-  for(int i = 0; i < 8; i++){
+  for(int i = 0; i < 12; i++){
     hammingData[i] = 0;
   }
 
   //For each of the 4 data bytes
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 6; i++)
   { 
     //Split the data byte into two nibbles
     uint8_t nibbles[2]  = {0, 0};
